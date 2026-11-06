@@ -1,0 +1,9 @@
+DEFINE SCHEMA
+
+    RECORD TYPE MacCommandJob (
+        "___recordID" REFERENCE QUERYABLE,
+        state STRING QUERYABLE,
+        purgeAt TIMESTAMP QUERYABLE SORTABLE,
+        part0 ASSET,
+        part1 ASSET
+    );

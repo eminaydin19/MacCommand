@@ -1,0 +1,5 @@
+**
+!requirements-relay.txt
+!relay_server.py
+!relay_protocol.py
+!deploy/Dockerfile

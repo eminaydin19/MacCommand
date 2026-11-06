@@ -1,5 +1,9 @@
+.venv/
 venv/
 __pycache__/
+.pytest_cache/
+.build/
+.swiftpm/
 build/
 dist/
 *.spec
@@ -7,3 +11,11 @@ dist/
 *.pyc
 *.pyo
 .env
+.omc/
+.superpowers/
+.impeccable/
+xcuserdata/
+*.xcuserstate
+deploy/devices/
+
+.packaging/

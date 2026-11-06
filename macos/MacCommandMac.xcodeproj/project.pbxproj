@@ -1,0 +1,240 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		C00000000000000000000016 /* MacCommandApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000004 /* MacCommandApp.swift */; };
+		C00000000000000000000017 /* ../ios/MacCommand/Core/CloudMailbox.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000005 /* ../ios/MacCommand/Core/CloudMailbox.swift */; };
+		C00000000000000000000018 /* ../ios/MacCommand/Core/Models.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000006 /* ../ios/MacCommand/Core/Models.swift */; };
+		C00000000000000000000019 /* ../ios/MacCommand/Core/RelayProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = C00000000000000000000007 /* ../ios/MacCommand/Core/RelayProtocol.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		C00000000000000000000004 /* MacCommandApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacCommandApp.swift; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000005 /* ../ios/MacCommand/Core/CloudMailbox.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ios/MacCommand/Core/CloudMailbox.swift; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000006 /* ../ios/MacCommand/Core/Models.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ios/MacCommand/Core/Models.swift; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000007 /* ../ios/MacCommand/Core/RelayProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ../ios/MacCommand/Core/RelayProtocol.swift; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000008 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000009 /* CloudKit.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = CloudKit.entitlements; sourceTree = SOURCE_ROOT; };
+		C00000000000000000000011 /* MacCommand.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; path = MacCommand.app; sourceTree = BUILT_PRODUCTS_DIR; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C00000000000000000000013 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		C00000000000000000000002 = {
+			isa = PBXGroup;
+			children = (
+				C00000000000000000000004 /* MacCommandApp.swift */,
+				C00000000000000000000005 /* ../ios/MacCommand/Core/CloudMailbox.swift */,
+				C00000000000000000000006 /* ../ios/MacCommand/Core/Models.swift */,
+				C00000000000000000000007 /* ../ios/MacCommand/Core/RelayProtocol.swift */,
+				C00000000000000000000008 /* Info.plist */,
+				C00000000000000000000009 /* CloudKit.entitlements */,
+				C00000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C00000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				C00000000000000000000011 /* MacCommand.app */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		C00000000000000000000010 /* MacCommand */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = C00000000000000000000021 /* Build configuration list for PBXNativeTarget "MacCommand" */;
+			buildPhases = (
+				C00000000000000000000012 /* Sources */,
+				C00000000000000000000013 /* Frameworks */,
+				C00000000000000000000014 /* Resources */,
+				C00000000000000000000015 /* Embed MacCommand service */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = MacCommand;
+			productName = MacCommand;
+			productReference = C00000000000000000000011 /* MacCommand.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		C00000000000000000000001 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				TargetAttributes = {
+					C00000000000000000000010 = {
+						CreatedOnToolsVersion = 27.2;
+						SystemCapabilities = {
+							com.apple.iCloud = {
+								enabled = 1;
+							};
+						};
+					};
+				};
+			};
+			buildConfigurationList = C00000000000000000000020 /* Build configuration list for PBXProject "MacCommandMac" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = tr;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				tr,
+				en,
+				Base,
+			);
+			mainGroup = C00000000000000000000002;
+			productRefGroup = C00000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				C00000000000000000000010 /* MacCommand */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C00000000000000000000014 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		C00000000000000000000015 /* Embed MacCommand service */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Embed MacCommand service";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "set -eu\nbundle=\"$TARGET_BUILD_DIR/$CONTENTS_FOLDER_PATH\"\nmkdir -p \"$bundle/Helpers\" \"$bundle/Resources\"\ninstall -m 755 \"$MACCOMMAND_SERVICE_BINARY\" \"$bundle/Helpers/MacCommandService\"\ninstall -m 644 \"$MACCOMMAND_ICON_FILE\" \"$bundle/Resources/AppIcon.icns\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C00000000000000000000012 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				C00000000000000000000016 /* MacCommandApp.swift in Sources */,
+				C00000000000000000000017 /* ../ios/MacCommand/Core/CloudMailbox.swift in Sources */,
+				C00000000000000000000018 /* ../ios/MacCommand/Core/Models.swift in Sources */,
+				C00000000000000000000019 /* ../ios/MacCommand/Core/RelayProtocol.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		C00000000000000000000022 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		C00000000000000000000023 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		C00000000000000000000024 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGN_ENTITLEMENTS = CloudKit.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = TKA86VW83X;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = Info.plist;
+				MACCOMMAND_ICON_FILE = "$(SRCROOT)/../build/macos/MacCommand.app/Contents/Resources/AppIcon.icns";
+				MACCOMMAND_SERVICE_BINARY = "$(SRCROOT)/../build/macos/MacCommand.app/Contents/Helpers/MacCommandService";
+				PRODUCT_BUNDLE_IDENTIFIER = com.eminaydin.maccommand;
+				PRODUCT_NAME = MacCommand;
+				SKIP_INSTALL = NO;
+			};
+			name = Debug;
+		};
+		C00000000000000000000025 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ARCHS = arm64;
+				CODE_SIGN_ENTITLEMENTS = CloudKit.entitlements;
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = TKA86VW83X;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
+				INFOPLIST_FILE = Info.plist;
+				MACCOMMAND_ICON_FILE = "$(SRCROOT)/../build/macos/MacCommand.app/Contents/Resources/AppIcon.icns";
+				MACCOMMAND_SERVICE_BINARY = "$(SRCROOT)/../build/macos/MacCommand.app/Contents/Helpers/MacCommandService";
+				PRODUCT_BUNDLE_IDENTIFIER = com.eminaydin.maccommand;
+				PRODUCT_NAME = MacCommand;
+				SKIP_INSTALL = NO;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		C00000000000000000000020 /* Build configuration list for PBXProject "MacCommandMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C00000000000000000000022 /* Debug */,
+				C00000000000000000000023 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		C00000000000000000000021 /* Build configuration list for PBXNativeTarget "MacCommand" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				C00000000000000000000024 /* Debug */,
+				C00000000000000000000025 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = C00000000000000000000001 /* Project object */;
+}
