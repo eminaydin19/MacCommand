@@ -1,29 +1,23 @@
 # MacCommand
 
-Mac’inin sistem durumuna bak, dosyalarını al ve terminal komutları çalıştır. iPhone’dan Wi‑Fi veya mobil internetle bağlanabilirsin. İstekler kendi iCloud hesabın üzerinden şifreli olarak iletilir.
+Check your Mac’s system status, transfer files, and run terminal commands from your iPhone. Connect over Wi-Fi or cellular data. Encrypted requests travel through your own iCloud account.
 
-**[Mac için DMG’yi indir](https://github.com/eminaydin19/MacCommand/releases/download/v3.1.0/MacCommand-3.1-CloudKit.dmg)** · [3.1 beta sürüm notları](https://github.com/eminaydin19/MacCommand/releases/tag/v3.1.0)
+**[Download for Mac](https://github.com/eminaydin19/MacCommand/releases/download/v3.1.0/MacCommand-3.1-CloudKit.dmg)** · [3.1 beta release notes](https://github.com/eminaydin19/MacCommand/releases/tag/v3.1.0)
 
-Mac için Apple Silicon ve macOS 14+ gerekir. iPhone sürümü iOS 17+ için davetli TestFlight betasında.
+Requires Apple Silicon and macOS 14 or later. The iPhone app is available through an invitation-only TestFlight beta for iOS 17 or later. The current beta’s app interface is in Turkish.
 
-<p align="center">
-  <img src="docs/media/system.png" width="230" alt="Sistem ekranında Mac’in işlemci, bellek ve disk kullanımı">
-  &nbsp;&nbsp;
-  <img src="docs/media/files.png" width="230" alt="Dosyalar ekranında favori klasörler ve Mac’teki dosyalar">
-</p>
-<p align="center"><sub>Sistem ve Dosyalar ekranları, iPhone simülatöründe örnek verilerle.</sub></p>
+## Get connected
 
-## İlk bağlantı
+1. Open the DMG on your Mac. Drag **MacCommand** into **Applications** and launch it.
+2. Install MacCommand on your iPhone using your TestFlight invitation. Sign in to the same iCloud account on both devices.
+3. Open the pairing QR code in the Mac app. Scan it with the iPhone app and confirm the connection.
 
-1. Mac’te DMG’yi aç. **MacCommand**’i **Uygulamalar** klasörüne taşı ve çalıştır.
-2. iPhone’a TestFlight davetinden MacCommand’i yükle. Mac ve iPhone’da aynı iCloud hesabını kullan.
-3. Mac’te **iPhone eşleştir**’e bas. iPhone ile QR kodunu tara ve **Mac’e bağlan**’ı seç.
+Your Mac must be awake and online. You can disable access or reset pairing from the Mac menu bar.
 
-Bağlantı için Mac uyanık ve çevrimiçi olmalı. Mac’in menü çubuğundan erişimi kapatabilir veya eşleştirmeyi yenileyebilirsin.
+## Files and terminal
 
-## Dosyalar ve terminal
+- **System status.** View your Mac’s CPU, memory, and disk usage.
+- **Files.** Save frequently used folders as favorites. Download files from your Mac or send a file from your iPhone’s share sheet. Each file can be up to 50 MiB.
+- **Terminal.** Unlock with Face ID or your device passcode. Commands run with the permissions of the user signed in on the Mac. Output appears when the command finishes. Stop requests may take time to reach the Mac.
 
-- **Dosyalar.** Sık kullandığın klasörleri favorilere ekle. Mac’ten dosya indirebilir veya iPhone’un paylaş menüsünden **Mac’e Gönder** ile 50 MiB’a kadar dosya gönderebilirsin.
-- **Terminal.** Face ID veya cihaz parolasıyla açılır. Komutlar Mac’te oturum açmış kullanıcının yetkileriyle çalışır. Çıktı komut tamamlandığında görünür. Durdurma isteğinin Mac’e ulaşması zaman alabilir.
-
-[Derleme ve CloudKit kurulumu](docs/build.md) · [MIT lisansı](LICENSE)
+[Build and CloudKit setup](docs/build.md) · [MIT license](LICENSE)

@@ -1,10 +1,16 @@
-# Derleme ve dağıtım
+# Build and distribution
 
-iOS ana uygulaması, paylaşma uzantısı ve Mac hedefi **iCloud.com.eminaydin.maccommand** kapsayıcısını kullanır. Apple Developer portalında üç hedefin uygulama kimliğine aynı kapsayıcıyı bağla ve imza profillerini yenile. Mac dağıtımı, CloudKit yetkili Developer ID profiliyle yapılır. Kendi fork’unu dağıtıyorsan takımına ait uygulama kimliklerini ve CloudKit kapsayıcısını kullan. iOS uygulamasının ve paylaşma uzantısının App Group kimliği de aynı olmalı.
+The iOS app, share extension, and Mac target use the **iCloud.com.eminaydin.maccommand** container. Associate the same container with all three App IDs in the Apple Developer portal and refresh their signing profiles. Mac distribution requires a Developer ID profile with CloudKit entitlements.
 
-[cloudkit/MacCommand.ckdb](../cloudkit/MacCommand.ckdb) iş kaydını ve dizinleri tanımlar. Önce mevcut geliştirme şemasını dışa aktar ve MacCommandJob tanımını birleştir. Geliştirme şemasını doğrulayıp içe aktar. Ardından CloudKit Console’dan değişiklikleri **Production** ortamına dağıt. Uygulamanın kullanıcı veritabanı özeldir. Şema public database erişim izni vermez. [Apple şema dağıtım kılavuzu](https://developer.apple.com/documentation/CloudKit/deploying-an-icloud-container-s-schema).
+For your own fork, use App IDs and a CloudKit container registered to your Apple Developer team. The iOS app and share extension must also share the same App Group identifier.
 
-Komutları depo kökünden çalıştır. Mac paketi için Python ve PyInstaller derleme makinesinde gerekir. Önce `build-mac.sh` ile yerleşik servisi hazırla, ardından Xcode projesinden CloudKit yetkili dağıtım arşivini oluştur.
+## CloudKit
+
+[cloudkit/MacCommand.ckdb](../cloudkit/MacCommand.ckdb) defines the job record and indexes. Export the existing development schema and merge the MacCommandJob definition. Validate and import the development schema, then deploy the changes to **Production** in CloudKit Console. The app uses each user’s private database. The schema does not grant public database access. [Apple’s schema deployment guide](https://developer.apple.com/documentation/CloudKit/deploying-an-icloud-container-s-schema).
+
+## Mac app
+
+Run the commands from the repository root. Python and PyInstaller are required on the build machine. Prepare the bundled service with `build-mac.sh`, then create a distribution archive from the Xcode project with CloudKit enabled.
 
 ~~~sh
 python3.14 -m venv .packaging
@@ -14,28 +20,30 @@ export MACCOMMAND_SIGN_IDENTITY='Developer ID Application: …'
 MACCOMMAND_PREVIEW=1 ./scripts/build-mac.sh
 xcodebuild -project macos/MacCommandMac.xcodeproj -scheme MacCommand \
   -configuration Release -destination generic/platform=macOS \
-  -archivePath build/macos/MacCommand.xcarchive DEVELOPMENT_TEAM=TAKIM_KIMLIGI \
+  -archivePath build/macos/MacCommand.xcarchive DEVELOPMENT_TEAM=YOUR_TEAM_ID \
   -allowProvisioningUpdates archive
 ~~~
 
-Mac arşivini Xcode Organizer’da **Developer ID** ile dışa aktar. Çıktının iCloud yetkisinin **Production** olduğunu kontrol et. Ardından Developer ID imzalı DMG’yi paketle ve Apple noter onayı için gönder. [Apple Developer ID belgesi](https://developer.apple.com/help/account/certificates/create-developer-id-certificates).
+Export the Mac archive using **Developer ID** in Xcode Organizer. Verify that the exported app’s iCloud environment entitlement is **Production**. Package a Developer ID signed DMG and submit it for Apple notarization. [Apple’s Developer ID documentation](https://developer.apple.com/help/account/certificates/create-developer-id-certificates).
 
 ~~~sh
 export MACCOMMAND_NOTARY_PROFILE=MacCommand
 ./scripts/package-dmg.sh path/to/MacCommand.app MacCommand-3.1-CloudKit.dmg
 ~~~
 
-iPhone arşivi ve iç TestFlight yüklemesi:
+## iPhone app
+
+Create an archive and upload it for internal TestFlight testing.
 
 ~~~sh
-export MACCOMMAND_IOS_TEAM='TAKIM_KIMLIGI'
+export MACCOMMAND_IOS_TEAM='YOUR_TEAM_ID'
 ./scripts/archive-ios.sh
 MACCOMMAND_IOS_DESTINATION=upload MACCOMMAND_IOS_REUSE_ARCHIVE=1 ./scripts/archive-ios.sh
 ~~~
 
-Apple işleme durumunu kontrol et. Şifreleme ihracat sorularını ve beta bilgilerini App Store Connect’te tamamla. İlk dağıtım iç test grubunu hedefler.
+Check Apple’s processing status. Complete the encryption export questions and beta information in App Store Connect. The initial distribution targets an internal testing group.
 
-## Doğrulama
+## Verification
 
 ~~~sh
 python3 -m venv .venv
@@ -44,6 +52,6 @@ python3 -m venv .venv
 .venv/bin/python scripts/test-relay-swift.py
 ~~~
 
-Mac helper testi CloudKit paket biçimi, dosya aktarımı, şifreli QR, istek süresi ve tekrar korumasını yerelde doğrular. Gerçek CloudKit testi için imzalı uygulama, aynı Apple hesabı ve ilgili ortama dağıtılmış şema gerekir.
+The Mac helper tests verify the CloudKit packet format, file transfers, encrypted QR pairing, request expiry, and replay protection locally. Live CloudKit testing requires a signed app, the same Apple account on both devices, and a schema deployed to the target environment.
 
-3.0 bağlantı sunucusu için eski eşleştirme biçimi iOS’ta okunabilir. Yeni Mac paketinin CloudKit yolu o altyapıya ihtiyaç duymaz.
+The iOS app can read the legacy pairing format for the 3.0 relay server. New Mac packages connect through CloudKit.
