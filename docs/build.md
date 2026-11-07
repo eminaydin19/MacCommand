@@ -28,7 +28,7 @@ Export the Mac archive using **Developer ID** in Xcode Organizer. Verify that th
 
 ~~~sh
 export MACCOMMAND_NOTARY_PROFILE=MacCommand
-./scripts/package-dmg.sh path/to/MacCommand.app MacCommand-3.1-CloudKit.dmg
+./scripts/package-dmg.sh path/to/MacCommand.app MacCommand-3.1.1-English.dmg
 ~~~
 
 ## iPhone app
