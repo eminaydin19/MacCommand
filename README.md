@@ -2,9 +2,16 @@
 
 Check your Mac’s system status, transfer files, and run terminal commands from your iPhone. Connect over Wi-Fi or cellular data. Encrypted requests travel through your own iCloud account.
 
-**[Download for Mac](https://github.com/eminaydin19/MacCommand/releases/download/v3.1.0/MacCommand-3.1-CloudKit.dmg)** · [3.1 beta release notes](https://github.com/eminaydin19/MacCommand/releases/tag/v3.1.0)
+**[Download the previous 3.1 Mac beta](https://github.com/eminaydin19/MacCommand/releases/download/v3.1.0/MacCommand-3.1-CloudKit.dmg)** · [3.1 beta release notes](https://github.com/eminaydin19/MacCommand/releases/tag/v3.1.0)
 
-Requires Apple Silicon and macOS 14 or later. The iPhone app is available through an invitation-only TestFlight beta for iOS 17 or later. The current beta’s app interface is in Turkish.
+Requires Apple Silicon and macOS 14 or later. The iPhone app is available through an invitation-only TestFlight beta for iOS 17 or later. Version 3.1.1 uses an English interface on iPhone and Mac. Its source is available below, and the English app packages are pending distribution. The previous 3.1 download uses Turkish.
+
+<p align="center">
+  <img src="docs/media/system.png" width="230" alt="System screen showing Mac CPU, memory, and disk usage">
+  &nbsp;&nbsp;
+  <img src="docs/media/files.png" width="230" alt="Files screen showing favorite folders and Mac files">
+</p>
+<p align="center"><sub>Version 3.1.1 · iPhone Simulator · sample data</sub></p>
 
 ## Get connected
 

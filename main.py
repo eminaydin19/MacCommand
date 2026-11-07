@@ -98,7 +98,7 @@ class DeleteRequest(BaseModel):
 
 def checked_path(raw: str) -> Path:
     if '\x00' in raw or len(raw) > 4096:
-        raise HTTPException(400, 'Geçersiz dosya yolu.')
+        raise HTTPException(400, 'Invalid file path.')
     return Path(os.path.abspath(os.path.expanduser(raw)))
 
 
@@ -113,7 +113,7 @@ def create_app(token=None, trash=send2trash):
     def verify(credentials: HTTPAuthorizationCredentials | None = Depends(bearer)):
         if (credentials is None or credentials.scheme.lower() != 'bearer'
                 or not secrets.compare_digest(credentials.credentials, security_token)):
-            raise HTTPException(401, 'Eşleştirme geçersiz. Mac’e yeniden bağlanın.',
+            raise HTTPException(401, 'Pairing is invalid. Reconnect to your Mac.',
                                 headers={'WWW-Authenticate': 'Bearer'})
 
     @app.get('/health')
@@ -140,13 +140,13 @@ def create_app(token=None, trash=send2trash):
     def terminal(req: CommandRequest):
         cwd = checked_path(req.cwd)
         if not cwd.is_dir() or not req.command.strip():
-            raise HTTPException(400, 'Komut veya çalışma dizini geçersiz.')
+            raise HTTPException(400, 'Invalid command or working directory.')
         if not command_lock.acquire(blocking=False):
-            raise HTTPException(409, 'Bir komut hâlâ çalışıyor. Bitmesini bekleyin.')
+            raise HTTPException(409, 'A command is still running. Wait for it to finish.')
         try:
             return execute_command(req.command, str(cwd))
         except OSError:
-            raise HTTPException(400, 'Komut başlatılamadı. Dizin izinlerini kontrol edin.')
+            raise HTTPException(400, 'Could not start the command. Check the folder permissions.')
         finally:
             command_lock.release()
 
@@ -154,9 +154,9 @@ def create_app(token=None, trash=send2trash):
     async def terminal_stream(req: StreamRequest, request: Request):
         cwd = checked_path(req.cwd)
         if not cwd.is_dir() or not req.command.strip():
-            raise HTTPException(400, 'Komut veya çalışma dizini geçersiz.')
+            raise HTTPException(400, 'Invalid command or working directory.')
         if not command_lock.acquire(blocking=False):
-            raise HTTPException(409, 'Bir komut hâlâ çalışıyor.')
+            raise HTTPException(409, 'A command is still running.')
         stop = threading.Event()
         active_command.update(id=req.id, stop=stop)
         async def body():
@@ -169,7 +169,7 @@ def create_app(token=None, trash=send2trash):
                         break
                     yield json.dumps(event)+'\n'
             except OSError:
-                yield json.dumps({'type':'error','text':'Komut başlatılamadı. Dizin izinlerini kontrol edin.'})+'\n'
+                yield json.dumps({'type':'error','text':'Could not start the command. Check the folder permissions.'})+'\n'
             finally:
                 stop.set()
                 try:
@@ -184,7 +184,7 @@ def create_app(token=None, trash=send2trash):
     @app.delete('/terminal/{command_id}', dependencies=[Depends(verify)])
     async def stop_command(command_id: str):
         if active_command.get('id') != command_id:
-            raise HTTPException(404, 'Çalışan komut bulunamadı.')
+            raise HTTPException(404, 'No running command found.')
         active_command['stop'].set()
         return {'stopping':True}
 
@@ -197,19 +197,19 @@ def create_app(token=None, trash=send2trash):
             try:
                 info=os.fstat(fd)
                 if not stat.S_ISREG(info.st_mode):
-                    raise HTTPException(400,'Yalnızca normal dosyalar indirilebilir.')
+                    raise HTTPException(400,'Only regular files can be downloaded.')
                 if info.st_size>TRANSFER_LIMIT:
-                    raise HTTPException(413,'Dosya aktarım sınırı 50 MB.')
+                    raise HTTPException(413,'The file transfer limit is 50 MiB.')
                 file=os.fdopen(fd,'rb')
                 fd=None
             finally:
                 if fd is not None: os.close(fd)
         except PermissionError:
             if file: file.close()
-            raise HTTPException(403,'Bu dosyaya erişim izni yok.')
+            raise HTTPException(403,'You do not have permission to access this file.')
         except FileNotFoundError:
             if file: file.close()
-            raise HTTPException(404,'Dosya bulunamadı.')
+            raise HTTPException(404,'File not found.')
         except BaseException:
             if file: file.close()
             raise
@@ -231,20 +231,20 @@ def create_app(token=None, trash=send2trash):
     @app.put('/files/upload', dependencies=[Depends(verify)])
     async def upload(request: Request, directory: str, name: str):
         if not name or name in ['.','..'] or '/' in name or '\\' in name or '\x00' in name or len(name.encode())>255:
-            raise HTTPException(400,'Dosya adı geçersiz.')
+            raise HTTPException(400,'Invalid file name.')
         parent=checked_path(directory).resolve()
         state=STATE_DIR.resolve()
         destination=parent/name
         if state==destination or state in destination.parents or destination in state.parents:
-            raise HTTPException(403,'Eşleştirme yapılandırması korunuyor.')
+            raise HTTPException(403,'The pairing configuration is protected.')
         if not parent.is_dir():
-            raise HTTPException(404,'Hedef klasör bulunamadı.')
+            raise HTTPException(404,'Destination folder not found.')
         try:
             length=int(request.headers.get('content-length','0'))
         except ValueError:
-            raise HTTPException(400,'Dosya boyutu geçersiz.')
+            raise HTTPException(400,'Invalid file size.')
         if length<0 or length>TRANSFER_LIMIT:
-            raise HTTPException(413,'Dosya aktarım sınırı 50 MB.')
+            raise HTTPException(413,'The file transfer limit is 50 MiB.')
         temporary=None
         try:
             fd,temporary=tempfile.mkstemp(prefix='.maccommand-',dir=parent)
@@ -253,10 +253,10 @@ def create_app(token=None, trash=send2trash):
                 async for chunk in request.stream():
                     total+=len(chunk)
                     if total>TRANSFER_LIMIT:
-                        raise HTTPException(413,'Dosya aktarım sınırı 50 MB.')
+                        raise HTTPException(413,'The file transfer limit is 50 MiB.')
                     await asyncio.to_thread(file.write,chunk)
                 if length and length!=total:
-                    raise HTTPException(400,'Dosya eksik aktarıldı; yeniden seçip deneyin.')
+                    raise HTTPException(400,'The file transfer was incomplete. Select the file again and retry.')
                 file.flush()
                 os.fsync(file.fileno())
             # Same-volume hard link publishes atomically and never replaces an existing entry.
@@ -264,11 +264,11 @@ def create_app(token=None, trash=send2trash):
             from fastapi.responses import JSONResponse
             return JSONResponse({'path':str(destination),'size':total},status_code=201)
         except FileExistsError:
-            raise HTTPException(409,'Bu isimde bir dosya var. Dosyayı yeniden adlandırın; üzerine yazılmadı.')
+            raise HTTPException(409,'A file with this name already exists. Rename the file and try again. The existing file was kept.')
         except PermissionError:
-            raise HTTPException(403,'Bu klasöre dosya kaydetme izni yok.')
+            raise HTTPException(403,'You do not have permission to save files in this folder.')
         except OSError:
-            raise HTTPException(400,'Dosya kaydedilemedi. Disk alanını ve klasör izinlerini kontrol edin.')
+            raise HTTPException(400,'Could not save the file. Check the available disk space and folder permissions.')
         finally:
             if temporary:
                 Path(temporary).unlink(missing_ok=True)
@@ -281,7 +281,7 @@ def create_app(token=None, trash=send2trash):
             with os.scandir(directory) as iterator:
                 for entry in iterator:
                     if len(entries) >= 10000:
-                        raise HTTPException(413, 'Bu klasörde çok fazla öğe var. Daha küçük bir klasör açın.')
+                        raise HTTPException(413, 'This folder contains too many items. Open a smaller folder.')
                     try:
                         stat = entry.stat(follow_symlinks=False)
                         entries.append({'name': entry.name, 'path': entry.path,
@@ -293,31 +293,31 @@ def create_app(token=None, trash=send2trash):
             entries.sort(key=lambda e: (not e['is_dir'], e['name'].casefold()))
             return {'path': str(directory), 'entries': entries}
         except PermissionError:
-            raise HTTPException(403, 'Bu klasöre erişim izni yok. Mac’te gizlilik izinlerini kontrol edin.')
+            raise HTTPException(403, 'You do not have permission to access this folder. Check the privacy settings on your Mac.')
         except (FileNotFoundError, NotADirectoryError):
-            raise HTTPException(404, 'Klasör bulunamadı.')
+            raise HTTPException(404, 'Folder not found.')
         except OSError:
-            raise HTTPException(400, 'Klasör okunamadı.')
+            raise HTTPException(400, 'Could not read the folder.')
 
     @app.get('/files/read', dependencies=[Depends(verify)])
     def read(path: str):
         target = checked_path(path)
         try:
             if not target.is_file():
-                raise HTTPException(404, 'Dosya bulunamadı.')
+                raise HTTPException(404, 'File not found.')
             with target.open('rb') as file:
                 data = file.read(FILE_LIMIT+1)
             if len(data) > FILE_LIMIT:
-                raise HTTPException(413, 'Önizleme sınırı 5 MB. Daha küçük bir dosya seçin.')
+                raise HTTPException(413, 'The preview limit is 5 MiB. Choose a smaller file.')
             if b'\x00' in data:
-                raise HTTPException(415, 'Yalnızca metin dosyaları önizlenebilir.')
+                raise HTTPException(415, 'Only text files can be previewed.')
             return {'path': str(target), 'content': data.decode('utf-8', errors='replace')}
         except PermissionError:
-            raise HTTPException(403, 'Bu dosyaya erişim izni yok.')
+            raise HTTPException(403, 'You do not have permission to access this file.')
         except FileNotFoundError:
-            raise HTTPException(404, 'Dosya bulunamadı.')
+            raise HTTPException(404, 'File not found.')
         except OSError:
-            raise HTTPException(400, 'Dosya okunamadı.')
+            raise HTTPException(400, 'Could not read the file.')
 
     @app.delete('/files', dependencies=[Depends(verify)])
     def remove(req: DeleteRequest):
@@ -330,17 +330,17 @@ def create_app(token=None, trash=send2trash):
         protected = {item.resolve() for item in protected}
         state = STATE_DIR.resolve()
         if canonical in protected:
-            raise HTTPException(403, 'Bu klasör korumalı; Çöp Sepeti’ne taşınamaz.')
+            raise HTTPException(403, 'This folder is protected and cannot be moved to the Trash.')
         if canonical == state or state in canonical.parents or canonical in state.parents:
-            raise HTTPException(403, 'Eşleştirme yapılandırması korunuyor.')
+            raise HTTPException(403, 'The pairing configuration is protected.')
         if not target.exists() and not target.is_symlink():
-            raise HTTPException(404, 'Dosya bulunamadı.')
+            raise HTTPException(404, 'File not found.')
         try:
             trash(str(target))
             return {'trashed': str(target)}
         except PermissionError:
-            raise HTTPException(403, 'Çöp Sepeti’ne taşıma izni yok. Dosya silinmedi.')
+            raise HTTPException(403, 'You do not have permission to move this file to the Trash. The file was kept.')
         except OSError:
-            raise HTTPException(400, 'Çöp Sepeti’ne taşınamadı. Kalıcı silme yapılmadı.')
+            raise HTTPException(400, 'Could not move the file to the Trash. The file was kept.')
 
     return app

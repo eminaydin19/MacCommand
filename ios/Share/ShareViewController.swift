@@ -11,13 +11,13 @@ final class ShareViewController: UIViewController {
                 let items = extensionContext?.inputItems as? [NSExtensionItem] ?? []
                 let providers = items.flatMap { $0.attachments ?? [] }
                 guard providers.count == 1, let provider = providers.first else {
-                    throw MacError.http(400,"Her seferinde tek bir dosya veya fotoğraf seç.")
+                    throw MacError.http(400,"Select one file or photo at a time.")
                 }
                 let file = try await sharedFile(provider)
                 temporaryFolder = file.deletingLastPathComponent()
                 self.presentRoot(ShareUploadView(file: file, close: { [weak self] in self?.extensionContext?.completeRequest(returningItems: nil) }))
             } catch {
-                self.presentRoot(ShareFailure(message: error.localizedDescription, close: { [weak self] in
+                self.presentRoot(ShareFailure(message: error is MacError ? error.localizedDescription : "Could not open the shared file. Try sharing it again.", close: { [weak self] in
                     self?.extensionContext?.cancelRequest(withError: error)
                 }))
             }
@@ -25,7 +25,7 @@ final class ShareViewController: UIViewController {
     }
     deinit { if let temporaryFolder { try? FileManager.default.removeItem(at: temporaryFolder) } }
     private func presentRoot<V: View>(_ root: V) {
-        let controller = UIHostingController(rootView: root.tint(.indigo))
+        let controller = UIHostingController(rootView: root.environment(\.locale, Locale(identifier: "en_US")).tint(.indigo))
         addChild(controller)
         view.addSubview(controller.view)
         controller.view.translatesAutoresizingMaskIntoConstraints = false
@@ -46,7 +46,7 @@ final class ShareViewController: UIViewController {
                 provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item,error in receive(item as? URL,error) }
             } else if let type = provider.registeredTypeIdentifiers.first(where: { UTType($0)?.conforms(to: .data) == true }) {
                 provider.loadFileRepresentation(forTypeIdentifier: type, completionHandler: receive)
-            } else { continuation.resume(throwing: MacError.http(415,"Bu paylaşım bir dosya içermiyor.")) }
+            } else { continuation.resume(throwing: MacError.http(415,"This share does not contain a file.")) }
         }
     }
 }
@@ -56,7 +56,7 @@ private func copySharedFile(_ file: URL, suggestedName: String?) throws -> URL {
     defer { if scoped { file.stopAccessingSecurityScopedResource() } }
     let values = try file.resourceValues(forKeys: [.fileSizeKey,.isRegularFileKey])
     guard values.isRegularFile == true, let size = values.fileSize, size <= APIClient.transferLimit else {
-        throw MacError.http(413,"Aktarım sınırı 50 MB. Tek bir normal dosya seç.")
+        throw MacError.http(413,"Select a single regular file up to 50 MiB.")
     }
     var name = ((suggestedName ?? file.lastPathComponent) as NSString).lastPathComponent
     if (name as NSString).pathExtension.isEmpty && !file.pathExtension.isEmpty { name += "." + file.pathExtension }
@@ -73,8 +73,8 @@ private struct ShareFailure: View {
     let message: String
     let close: () -> Void
     var body: some View {
-        ContentUnavailableView { Label("Dosya gönderilemedi", systemImage:"exclamationmark.circle") }
-        description: { Text(message) } actions: { Button("Kapat", action:close) }
+        ContentUnavailableView { Label("Could not send file", systemImage:"exclamationmark.circle") }
+        description: { Text(message) } actions: { Button("Close", action:close) }
     }
 }
 
@@ -93,40 +93,40 @@ private struct ShareUploadView: View {
             Form {
                 Section { Label(file.lastPathComponent, systemImage:"doc") }
                 if let discovery {
-                    Section("Hedef Mac") {
+                    Section("Destination Mac") {
                         Text(discovery.name)
-                        TextField("Hedef klasör",text:$directory).textInputAutocapitalization(.never).autocorrectionDisabled().disabled(busy)
-                        Button("İndirilenler") { directory = (discovery.home as NSString).appendingPathComponent("Downloads") }.disabled(busy)
-                        Button("Masaüstü") { directory = (discovery.home as NSString).appendingPathComponent("Desktop") }.disabled(busy)
+                        TextField("Destination folder",text:$directory).textInputAutocapitalization(.never).autocorrectionDisabled().disabled(busy)
+                        Button("Downloads") { directory = (discovery.home as NSString).appendingPathComponent("Downloads") }.disabled(busy)
+                        Button("Desktop") { directory = (discovery.home as NSString).appendingPathComponent("Desktop") }.disabled(busy)
                     }
                     Section {
-                        if completed { Label("Mac’e gönderildi",systemImage:"checkmark.circle") }
+                        if completed { Label("Sent to Mac",systemImage:"checkmark.circle") }
                         else {
                             Button {
                                 busy=true; error=nil
                                 transferTask=Task {
                                     defer { busy=false; transferTask=nil }
                                     do {
-                                        try await DeviceLock.requireOwner("Mac’ine dosya göndermek için kimliğini doğrula.")
+                                        try await DeviceLock.requireOwner("Verify your identity to send a file to your Mac.")
                                         try Task.checkCancellation()
                                         try await api.upload(file,directory:directory,discovery:discovery)
                                         completed=true
-                                    } catch { if !Task.isCancelled { self.error=error.localizedDescription } }
+                                    } catch { if !Task.isCancelled { self.error=error is MacError ? error.localizedDescription : "The file could not be sent. Check the destination folder and connection, then try again." } }
                                 }
-                            } label: { HStack { Text("Mac’e gönder"); Spacer(); if busy { ProgressView() } } }.disabled(busy || !directory.hasPrefix("/"))
+                            } label: { HStack { Text("Send to Mac"); Spacer(); if busy { ProgressView() } } }.disabled(busy || !directory.hasPrefix("/"))
                         }
-                    } footer: { Text("50 MB’a kadar tek dosya. Aynı isimdeki dosyanın üzerine yazılmaz. Göndermeden önce Face ID veya cihaz parolası istenir.") }
-                } else if error == nil { ProgressView("Mac bulunuyor…") }
+                    } footer: { Text("Send one file up to 50 MiB. Existing files are preserved. Face ID or your device passcode is required before sending.") }
+                } else if error == nil { ProgressView("Finding your Mac…") }
                 if let error { Section { Text(error).foregroundStyle(.red) } }
             }
-            .navigationTitle("Mac’e Gönder").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement:.cancellationAction) { Button(completed ? "Bitti" : "Vazgeç") { transferTask?.cancel(); close() } } }
+            .navigationTitle("Send to Mac").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement:.cancellationAction) { Button(completed ? "Done" : "Cancel") { transferTask?.cancel(); close() } } }
             .task {
                 do {
-                    guard let pairing = try PairingStore().load() else { throw MacError.http(401,"Önce MacCommand uygulamasını açıp Mac’inle eşleştir.") }
+                    guard let pairing = try PairingStore().load() else { throw MacError.http(401,"Open MacCommand and pair with your Mac first.") }
                     let value = try await api.discover(pairing)
                     discovery=value; directory=(value.home as NSString).appendingPathComponent("Downloads")
-                } catch { self.error=error.localizedDescription }
+                } catch { self.error=error is MacError ? error.localizedDescription : "Could not connect to your Mac. Open MacCommand and check pairing." }
             }
         }
     }

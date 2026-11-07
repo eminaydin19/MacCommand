@@ -4,13 +4,13 @@ public enum MacError: LocalizedError, Sendable {
     case pairing, discovery, unsafeURL, incompatible, unauthorized, http(Int, String), invalidResponse
     public var errorDescription: String? {
         switch self {
-        case .pairing: "Eşleştirme bilgisi geçersiz. Mac’teki güncel QR kodunu kullanın."
-        case .discovery: "Bağlantı bilgileri açılamadı. Mac’te servisi kontrol edin veya yeniden eşleştirin."
-        case .unsafeURL: "Güvenli bir Mac bağlantısı bulunamadı. Mac’te servisi yeniden başlatın."
-        case .incompatible: "Mac servisi güncel değil. MacCommand servisinin bu uygulamayla birlikte gelen sürümünü başlatın."
-        case .unauthorized: "Mac’in erişim anahtarı değişmiş olabilir. Yeniden bağlanmayı deneyin."
-        case .http(let code, let message): message.isEmpty ? "Sunucu yanıtı: \(code). Daha sonra tekrar deneyin." : message
-        case .invalidResponse: "Mac’ten beklenmeyen bir yanıt geldi. Servisin sürümünü kontrol edin."
+        case .pairing: "Invalid pairing details. Use the current QR code on your Mac."
+        case .discovery: "Could not load the connection details. Check MacCommand on your Mac or pair again."
+        case .unsafeURL: "Could not find a secure connection. Restart MacCommand on your Mac."
+        case .incompatible: "The Mac service is out of date. Install the matching version of MacCommand on your Mac."
+        case .unauthorized: "Your Mac’s access key may have changed. Try reconnecting."
+        case .http(let code, let message): message.isEmpty ? "Server response \(code). Try again later." : message
+        case .invalidResponse: "Your Mac returned an unexpected response. Check the MacCommand version."
         }
     }
 }

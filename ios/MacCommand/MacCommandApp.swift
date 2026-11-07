@@ -3,7 +3,7 @@ import SwiftUI
 @main struct MacCommandApp: App {
     @State private var session = Session()
     var body: some Scene {
-        WindowGroup { RootView().environment(session).tint(.indigo) }
+        WindowGroup { RootView().environment(session).environment(\.locale, Locale(identifier: "en_US")).tint(.indigo) }
     }
 }
 
@@ -17,11 +17,11 @@ struct RootView: View {
             if session.hasPairing {
                 TabView(selection: $session.selectedTab) {
                     NavigationStack { SystemView().toolbar { settingsButton } }
-                        .tabItem { Label("Sistem", systemImage: "desktopcomputer") }.tag(0)
+                        .tabItem { Label("System", systemImage: "desktopcomputer") }.tag(0)
                     NavigationStack { TerminalView().toolbar { settingsButton } }
                         .tabItem { Label("Terminal", systemImage: "terminal") }.tag(1)
                     NavigationStack { FilesView(path: session.discovery?.home ?? "~").toolbar { settingsButton } }
-                        .tabItem { Label("Dosyalar", systemImage: "folder") }.tag(2)
+                        .tabItem { Label("Files", systemImage: "folder") }.tag(2)
                 }
             } else {
                 OnboardingView()
@@ -48,7 +48,7 @@ struct RootView: View {
     }
     private var settingsButton: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
-            Button("Ayarlar", systemImage: "gearshape") { settings = true }
+            Button("Settings", systemImage: "gearshape") { settings = true }
         }
     }
 }

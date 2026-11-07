@@ -9,32 +9,32 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section {
-                    LabeledContent("Mac", value: session.discovery?.name ?? "Bağlantı bekleniyor")
+                    LabeledContent("Mac", value: session.discovery?.name ?? "Waiting for connection")
                     ConnectionStatus()
-                    Button("Yeniden bağlan") { Task { await session.reconnect() } }.disabled(session.connecting || session.isDemo)
-                } header: { Text("Bağlantı") }
+                    Button("Reconnect") { Task { await session.reconnect() } }.disabled(session.connecting || session.isDemo)
+                } header: { Text("Connection") }
                 Section {
-                    Label("Terminal ve dosya aktarımları Face ID veya cihaz parolasıyla korunur.", systemImage: "faceid")
-                    Label("Anahtar bu iPhone’un güvenli deposunda saklanır.", systemImage: "lock.shield")
-                    Text("Mac’ine erişim, Mac’teki kullanıcı hesabının izinleriyle sınırlıdır. Mac uyurken veya internete bağlı değilken bağlantı kurulamaz.")
+                    Label("The terminal and file transfers require Face ID or your device passcode.", systemImage: "faceid")
+                    Label("Your key is kept in this iPhone’s secure storage.", systemImage: "lock.shield")
+                    Text("Access uses the permissions of your Mac user account. Your Mac must be awake and online.")
                         .font(.subheadline).foregroundStyle(.secondary)
-                } header: { Text("Erişim") }
+                } header: { Text("Access") }
                 Section {
-                    Button("Eşleştirmeyi kaldır", role: .destructive) { confirm = true }
+                    Button("Remove Pairing", role: .destructive) { confirm = true }
                 } footer: {
-                    Text("Bu işlem yalnızca bu iPhone’daki anahtarı kaldırır. Kayıp bir telefonun erişimini iptal etmek için Mac’te eşleştirme anahtarını yenile.")
+                    Text("This removes the key from this iPhone. To revoke a lost phone’s access, reset pairing on your Mac.")
                 }
                 if let error { Section { ErrorNotice(message: error, retry: nil) } }
-                Section { LabeledContent("MacCommand", value: "3.1") }
+                Section { LabeledContent("MacCommand", value: "3.1.1") }
             }
-            .navigationTitle("Ayarlar").navigationBarTitleDisplayMode(.inline)
-            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Bitti") { dismiss() } } }
-            .confirmationDialog("Bu iPhone’un eşleştirmesi kaldırılsın mı?", isPresented: $confirm, titleVisibility: .visible) {
-                Button("Eşleştirmeyi kaldır", role: .destructive) {
+            .navigationTitle("Settings").navigationBarTitleDisplayMode(.inline)
+            .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { dismiss() } } }
+            .confirmationDialog("Remove pairing from this iPhone?", isPresented: $confirm, titleVisibility: .visible) {
+                Button("Remove Pairing", role: .destructive) {
                     do { try session.forget(); dismiss() }
                     catch { self.error = Session.describe(error) }
                 }
-                Button("Vazgeç", role: .cancel) {}
+                Button("Cancel", role: .cancel) {}
             }
         }
     }

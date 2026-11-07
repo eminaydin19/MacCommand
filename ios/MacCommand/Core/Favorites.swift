@@ -12,8 +12,15 @@ public struct FavoriteStore {
     public init(defaults: UserDefaults = .standard) { self.defaults = defaults }
     public func load(macID: String, home: String) -> [FavoriteFolder] {
         if let data = defaults.data(forKey: "favorites.\(macID)"),
-           let saved = try? JSONDecoder().decode([FavoriteFolder].self, from: data) { return saved }
-        return [("Projeler", "Projects"), ("Masaüstü", "Desktop"), ("İndirilenler", "Downloads")]
+           let saved = try? JSONDecoder().decode([FavoriteFolder].self, from: data) {
+            let legacyNames = ["Projeler": "Projects", "Masaüstü": "Desktop", "İndirilenler": "Downloads"]
+            return saved.map { folder in
+                guard let name = legacyNames[folder.name],
+                      folder.path == (home as NSString).appendingPathComponent(name) else { return folder }
+                return FavoriteFolder(name: name, path: folder.path)
+            }
+        }
+        return [("Projects", "Projects"), ("Desktop", "Desktop"), ("Downloads", "Downloads")]
             .map { FavoriteFolder(name: $0.0, path: (home as NSString).appendingPathComponent($0.1)) }
     }
     func migrate(from oldID: String, to deviceID: String) {

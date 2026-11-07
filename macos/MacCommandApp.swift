@@ -12,27 +12,27 @@ final class Companion {
 
         var title: String {
             switch self {
-            case .unconfigured: "iCloud yapılandırması bekleniyor"
-            case .stopped: "Erişim kapalı"
-            case .starting: "Başlatılıyor"
-            case .connected: "Erişim açık"
-            case .waiting: "Bağlantı bekleniyor"
-            case .stopping: "Durduruluyor"
-            case .error: "Uygulama başlatılamadı"
-            case .alreadyRunning: "MacCommand zaten çalışıyor"
+            case .unconfigured: "iCloud setup required"
+            case .stopped: "Access disabled"
+            case .starting: "Starting"
+            case .connected: "Access enabled"
+            case .waiting: "Waiting for connection"
+            case .stopping: "Stopping"
+            case .error: "Unable to start"
+            case .alreadyRunning: "MacCommand is already running"
             }
         }
 
         var detail: String {
             switch self {
-            case .unconfigured: "Bu pakete iCloud dağıtım profili henüz eklenmedi."
-            case .stopped: "Bu Mac’e iPhone’dan bağlanmak için erişimi aç."
-            case .starting: "MacCommand bağlantıyı hazırlıyor."
-            case .connected: "Mac açık ve internete bağlıyken iPhone’undan erişebilirsin."
-            case .waiting: "MacCommand bağlantıyı yeniden kurmayı deniyor."
-            case .stopping: "Aktif bağlantılar kapatılıyor."
-            case .error: "MacCommand’i yeniden başlatmayı dene."
-            case .alreadyRunning: "MacCommand’in başka bir kopyasını veya eski servisini kapat."
+            case .unconfigured: "This build needs an iCloud distribution profile."
+            case .stopped: "Enable access to connect to this Mac from your iPhone."
+            case .starting: "MacCommand is preparing the connection."
+            case .connected: "Connect from your iPhone while this Mac is awake and online."
+            case .waiting: "MacCommand is trying to reconnect."
+            case .stopping: "Closing active connections."
+            case .error: "Try restarting MacCommand."
+            case .alreadyRunning: "Close any other copy of MacCommand or its previous service."
             }
         }
 
@@ -270,7 +270,8 @@ final class Companion {
                     guard !Task.isCancelled else { return }
                     prepared = false
                     status = .waiting
-                    cloudIssue = CloudMailbox.explain(error).localizedDescription
+                    cloudIssue = (CloudMailbox.explain(error) as? MacError)?.errorDescription
+                        ?? "The connection could not be completed. Check iCloud and try again."
                     let retry = max(4, (error as? CKError)?.retryAfterSeconds ?? 8)
                     try? await Task.sleep(for: .seconds(retry))
                 }
@@ -326,10 +327,10 @@ final class Companion {
             if enabled { try SMAppService.mainApp.register() }
             else { try SMAppService.mainApp.unregister() }
             if SMAppService.mainApp.status == .requiresApproval {
-                loginError = "Sistem Ayarları’ndan MacCommand’in oturum açma iznini onayla."
+                loginError = "Allow MacCommand to launch at login in System Settings."
             }
         } catch {
-            loginError = "Bu ayarı değiştirmek için MacCommand’i Uygulamalar klasöründen aç."
+            loginError = "Open MacCommand from Applications to change this setting."
         }
         loginEnabled = SMAppService.mainApp.status == .enabled
     }
@@ -359,7 +360,7 @@ private struct CompanionView: View {
                     .accessibilityHidden(true)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("MacCommand").font(.title2.weight(.semibold))
-                    Text(Host.current().localizedName ?? "Bu Mac")
+                    Text(Host.current().localizedName ?? "This Mac")
                         .foregroundStyle(.secondary).lineLimit(1)
                 }
                 Spacer(minLength: 0)
@@ -376,17 +377,17 @@ private struct CompanionView: View {
             HStack(spacing: 10) {
                 if companion.active {
                     if companion.status == .connected && companion.pairing == nil {
-                        Label("iPhone eşleşti", systemImage: "checkmark.iphone")
+                        Label("iPhone paired", systemImage: "checkmark.iphone")
                             .foregroundStyle(.secondary)
                     } else {
-                        Button("iPhone eşleştir", systemImage: "qrcode") { showCode = true }
+                        Button("Pair iPhone", systemImage: "qrcode") { showCode = true }
                             .buttonStyle(.borderedProminent)
                             .disabled(companion.status != .connected || companion.pairing == nil)
                     }
-                    Button("Erişimi kapat") { companion.stop() }
+                    Button("Disable access") { companion.stop() }
                         .disabled(companion.status == .stopping)
                 } else {
-                    Button("Erişimi aç") { companion.start() }
+                    Button("Enable access") { companion.start() }
                         .buttonStyle(.borderedProminent)
                         .disabled([.unconfigured, .starting, .stopping].contains(companion.status))
                 }
@@ -394,19 +395,19 @@ private struct CompanionView: View {
             }
             HStack {
                 if companion.status == .waiting, let registration = companion.registration {
-                    Button("Beta kayıt bilgisini kopyala") { copy(registration) }
+                    Button("Copy beta registration") { copy(registration) }
                 }
                 Spacer()
                 Menu {
-                    Button("Eşleştirmeyi yenile…") { confirmReset = true }
+                    Button("Reset pairing…") { confirmReset = true }
                         .disabled(!companion.canRenew)
-                    SettingsLink { Text("Ayarlar…") }
+                    SettingsLink { Text("Settings…") }
                 } label: {
-                    Label("Seçenekler", systemImage: "ellipsis.circle").labelStyle(.iconOnly)
+                    Label("Options", systemImage: "ellipsis.circle").labelStyle(.iconOnly)
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
-                .accessibilityLabel("MacCommand seçenekleri")
+                .accessibilityLabel("MacCommand options")
             }
         }
         .padding(26)
@@ -419,11 +420,11 @@ private struct CompanionView: View {
         .onChange(of: companion.pairing) { _, code in
             if code == nil { showCode = false }
         }
-        .confirmationDialog("Eşleştirme yenilensin mi?", isPresented: $confirmReset) {
-            Button("Yenile", role: .destructive) { companion.renew() }
-            Button("Vazgeç", role: .cancel) {}
+        .confirmationDialog("Reset pairing?", isPresented: $confirmReset) {
+            Button("Reset", role: .destructive) { companion.renew() }
+            Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Eski iPhone’un erişimi kapanır. iPhone’da yeni QR kodunu taraman gerekir.")
+            Text("Your previously paired iPhone will lose access. Scan the new QR code to pair it again.")
         }
     }
 }
@@ -446,8 +447,8 @@ private struct PairingView: View {
 
     var body: some View {
         VStack(spacing: 14) {
-            Text("iPhone’unu eşleştir").font(.title2.weight(.semibold))
-            Text("iPhone’da MacCommand’i aç ve QR kodunu tara.")
+            Text("Pair your iPhone").font(.title2.weight(.semibold))
+            Text("Open MacCommand on your iPhone and scan the QR code.")
                 .foregroundStyle(.secondary)
             if let qr {
                 Image(decorative: qr, scale: 1)
@@ -456,14 +457,14 @@ private struct PairingView: View {
                     .frame(width: 236, height: 236)
                     .padding(12)
                     .background(.white, in: .rect(cornerRadius: 12))
-                    .accessibilityLabel("MacCommand eşleştirme kodu")
+                    .accessibilityLabel("MacCommand pairing code")
                     .privacySensitive()
             }
-            Text("Bu kod tek kullanımlıktır ve Mac’ine erişim verir.")
+            Text("This code works once and grants access to your Mac.")
                 .font(.footnote).foregroundStyle(.secondary)
             HStack {
-                Button("Eşleştirme metnini kopyala") { copy(code) }
-                Button("Bitti", action: dismiss).keyboardShortcut(.defaultAction)
+                Button("Copy pairing details") { copy(code) }
+                Button("Done", action: dismiss).keyboardShortcut(.defaultAction)
             }
         }
         .padding(26)
@@ -488,26 +489,26 @@ struct MacCommandApp: App {
         .windowResizability(.contentSize)
         MenuBarExtra("MacCommand", systemImage: "desktopcomputer") {
             Text(companion.status.title)
-            Button("MacCommand’i aç") {
+            Button("Open MacCommand") {
                 openWindow(id: "main")
                 NSApp.activate(ignoringOtherApps: true)
             }
             if companion.active {
-                Button("Erişimi kapat") { companion.stop() }.disabled(companion.status == .stopping)
+                Button("Disable access") { companion.stop() }.disabled(companion.status == .stopping)
             } else if companion.status != .unconfigured {
-                Button("Erişimi aç") { companion.start() }
+                Button("Enable access") { companion.start() }
             }
             Divider()
-            Button("Çıkış") { NSApp.terminate(nil) }.keyboardShortcut("q")
+            Button("Quit") { NSApp.terminate(nil) }.keyboardShortcut("q")
         }
         Settings {
             Form {
-                Toggle("Oturum açınca MacCommand’i başlat",
+                Toggle("Launch MacCommand at login",
                        isOn: Binding(get: { companion.loginEnabled }, set: { companion.setLogin($0) }))
                 if let error = companion.loginError {
                     Text(error).font(.footnote).foregroundStyle(.secondary)
                 }
-                LabeledContent("Sürüm", value: "3.1")
+                LabeledContent("Version", value: "3.1.1")
             }
             .formStyle(.grouped)
             .frame(width: 410)

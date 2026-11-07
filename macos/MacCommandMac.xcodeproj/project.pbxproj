@@ -96,10 +96,9 @@
 			};
 			buildConfigurationList = C00000000000000000000020 /* Build configuration list for PBXProject "MacCommandMac" */;
 			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = tr;
+			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
-				tr,
 				en,
 				Base,
 			);

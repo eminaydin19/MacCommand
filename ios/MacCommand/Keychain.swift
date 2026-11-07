@@ -46,6 +46,6 @@ struct PairingStore {
     }
     private func error(_ status: OSStatus) -> NSError {
         NSError(domain: "MacCommand.Keychain", code: Int(status), userInfo: [NSLocalizedDescriptionKey:
-            "Eşleştirme güvenli depodan okunamadı veya kaydedilemedi. iPhone’un kilidini açıp tekrar deneyin."])
+            "Pairing could not be read from or saved to secure storage. Unlock your iPhone and try again."])
     }
 }

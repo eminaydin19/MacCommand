@@ -1,6 +1,7 @@
 import SwiftUI
 import Observation
 import CryptoKit
+import LocalAuthentication
 
 @MainActor @Observable final class Session {
     var pairing: Pairing?
@@ -25,7 +26,7 @@ import CryptoKit
         #if DEBUG
         if ProcessInfo.processInfo.arguments.contains("--demo") {
             isDemo = true
-            discovery = Discovery(pairing: nil, name: "Emin’in Mac’i", home: "/Users/emin")
+            discovery = Discovery(pairing: nil, name: "Alex’s Mac", home: "/Users/alex")
             metrics = try? JSONDecoder().decode(Metrics.self, from: Data(#"{"cpu_percent":18,"ram":{"total":17179869184,"used":9878424780,"available":7301444404,"percent":57.5},"disk":{"total":500107862016,"used":214794731520,"free":285313130496,"percent":43},"battery":{"percent":84,"charging":false,"seconds_left":18420}}"#.utf8))
             loadFavorites()
             lastUpdated = .now
@@ -36,14 +37,14 @@ import CryptoKit
         }
         #endif
         do { pairing = try store.load() }
-        catch { storageError = error.localizedDescription }
+        catch { storageError = Self.describe(error) }
     }
     var usesCloudKit: Bool { pairing?.version == 4 }
     var hasPairing: Bool { pairing != nil || isDemo }
     var status: String {
-        if isDemo { return "Önizleme · örnek veriler" }
-        if connecting { return "Bağlanıyor…" }
-        return discovery == nil ? "Çevrimdışı" : "Bağlı"
+        if isDemo { return "Preview · sample data" }
+        if connecting { return "Connecting…" }
+        return discovery == nil ? "Offline" : "Connected"
     }
     func pair(_ text: String) async throws {
         let code = try Pairing.parse(text)
@@ -128,20 +129,20 @@ import CryptoKit
     func files(_ path: String) async throws -> DirectoryListing {
         #if DEBUG
         if isDemo {
-            return try JSONDecoder().decode(DirectoryListing.self, from: Data(#"{"path":"/Users/emin","entries":[{"name":"Belgeler","path":"/Users/emin/Belgeler","is_dir":true,"is_symlink":false,"size":128,"modified":1793872800},{"name":"Masaüstü","path":"/Users/emin/Masaüstü","is_dir":true,"is_symlink":false,"size":128,"modified":1793872800},{"name":"Projeler","path":"/Users/emin/Projeler","is_dir":true,"is_symlink":false,"size":128,"modified":1793872800},{"name":"notlar.md","path":"/Users/emin/notlar.md","is_dir":false,"is_symlink":false,"size":2480,"modified":1793872800}]}"#.utf8))
+            return try JSONDecoder().decode(DirectoryListing.self, from: Data(#"{"path":"/Users/alex","entries":[{"name":"Documents","path":"/Users/alex/Documents","is_dir":true,"is_symlink":false,"size":128,"modified":1793872800},{"name":"Desktop","path":"/Users/alex/Desktop","is_dir":true,"is_symlink":false,"size":128,"modified":1793872800},{"name":"Projects","path":"/Users/alex/Projects","is_dir":true,"is_symlink":false,"size":128,"modified":1793872800},{"name":"notes.md","path":"/Users/alex/notes.md","is_dir":false,"is_symlink":false,"size":2480,"modified":1793872800}]}"#.utf8))
         }
         #endif
-        guard let discovery else { throw MacError.http(503, "Mac çevrimdışı. Önce yeniden bağlanın.") }
+        guard let discovery else { throw MacError.http(503, "Your Mac is offline. Reconnect first.") }
         do { return try await api.get("files", discovery: discovery, query: [.init(name: "path", value: path)]) }
         catch { connectionFailed(error, attempted: discovery); throw error }
     }
     func read(_ path: String) async throws -> FileContent {
-        guard !isDemo, let discovery else { throw MacError.http(503, "Canlı Mac bağlantısı gerekiyor.") }
+        guard !isDemo, let discovery else { throw MacError.http(503, "A connection to your Mac is required.") }
         do { return try await api.get("files/read", discovery: discovery, query: [.init(name: "path", value: path)]) }
         catch { connectionFailed(error, attempted: discovery); throw error }
     }
     func trash(_ path: String) async throws {
-        guard !isDemo, let discovery else { throw MacError.http(503, "Canlı Mac bağlantısı gerekiyor.") }
+        guard !isDemo, let discovery else { throw MacError.http(503, "A connection to your Mac is required.") }
         try await deviceLock.authorizeFileOperation()
         do { try await api.trash(path, discovery: discovery) }
         catch { connectionFailed(error, attempted: discovery); throw error }
@@ -158,26 +159,26 @@ import CryptoKit
         favoriteFolders = folders
     }
     func upload(_ file: URL, directory: String) async throws {
-        guard !isDemo, let discovery else { throw MacError.http(503,"Canlı Mac bağlantısı gerekiyor.") }
+        guard !isDemo, let discovery else { throw MacError.http(503,"A connection to your Mac is required.") }
         try await deviceLock.authorizeFileOperation()
         do { try await api.upload(file, directory: directory, discovery: discovery) }
         catch { connectionFailed(error, attempted: discovery); throw error }
     }
     func download(_ path: String) async throws -> URL {
-        guard !isDemo, let discovery else { throw MacError.http(503,"Canlı Mac bağlantısı gerekiyor.") }
+        guard !isDemo, let discovery else { throw MacError.http(503,"A connection to your Mac is required.") }
         try await deviceLock.authorizeFileOperation()
         do { return try await api.download(path, discovery: discovery) }
         catch { connectionFailed(error, attempted: discovery); throw error }
     }
     func stream(_ command: String, cwd: String, id: String,
                 onEvent: @escaping @Sendable (CommandEvent) async throws -> Void) async throws {
-        guard deviceLock.terminalUnlocked else { throw MacError.http(403,"Önce terminalin kilidini açın.") }
-        guard !isDemo, let discovery else { throw MacError.http(503,"Canlı Mac bağlantısı gerekiyor.") }
+        guard deviceLock.terminalUnlocked else { throw MacError.http(403,"Unlock the terminal first.") }
+        guard !isDemo, let discovery else { throw MacError.http(503,"A connection to your Mac is required.") }
         do { try await api.stream(command, cwd: cwd, id: id, discovery: discovery, onEvent: onEvent) }
         catch { connectionFailed(error, attempted: discovery); throw error }
     }
     func stop(_ id: String) async throws {
-        guard !isDemo, let discovery else { throw MacError.http(503,"Canlı Mac bağlantısı gerekiyor.") }
+        guard !isDemo, let discovery else { throw MacError.http(503,"A connection to your Mac is required.") }
         try await api.stop(id, discovery: discovery)
     }
     func checkConnection() async {
@@ -223,13 +224,32 @@ import CryptoKit
     static func describe(_ error: Error) -> String {
         if let url = error as? URLError {
             switch url.code {
-            case .notConnectedToInternet: return "İnternet bağlantısı yok. Bağlantını kontrol edip tekrar dene."
-            case .timedOut: return "Mac zamanında yanıt vermedi. Açık ve internete bağlı olduğundan emin ol."
+            case .notConnectedToInternet: return "No internet connection. Check your connection and try again."
+            case .timedOut: return "Your Mac did not respond in time. Make sure it is awake and online."
             case .cannotFindHost, .cannotConnectToHost, .networkConnectionLost:
-                return "Mac’e ulaşılamıyor. Mac’in açık ve servisin çalışıyor olduğunu kontrol et."
-            default: return "Bağlantı kurulamadı. İnternetini ve Mac servisini kontrol et."
+                return "Your Mac is unreachable. Make sure it is awake and MacCommand is running."
+            default: return "Could not connect. Check your internet connection and MacCommand on your Mac."
             }
         }
-        return error.localizedDescription
+        if let authentication = error as? LAError {
+            switch authentication.code {
+            case .userCancel, .systemCancel, .appCancel:
+                return "Authentication was cancelled. Try again when you are ready."
+            case .passcodeNotSet, .biometryNotAvailable, .biometryNotEnrolled:
+                return "Set up Face ID or a device passcode on your iPhone."
+            case .biometryLockout:
+                return "Unlock your iPhone with your passcode, then try again."
+            default:
+                return "Your identity could not be verified. Try again."
+            }
+        }
+        if error is MacError || (error as NSError).domain == "MacCommand.Keychain" {
+            return error.localizedDescription
+        }
+        if error is CancellationError { return "The operation was cancelled." }
+        if error is CocoaError {
+            return "The file operation could not be completed. Check file access permissions and available storage, then try again."
+        }
+        return "The operation could not be completed. Check your connection and try again."
     }
 }

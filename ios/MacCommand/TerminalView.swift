@@ -28,11 +28,11 @@ struct TerminalView: View {
             if session.deviceLock.terminalUnlocked { terminal }
             else {
                 ContentUnavailableView {
-                    Label("Terminal kilitli", systemImage: "lock.shield")
+                    Label("Terminal locked", systemImage: "lock.shield")
                 } description: {
-                    Text(authError ?? "Komutlarına ve çıktılara erişmek için kimliğini doğrula.")
+                    Text(authError ?? "Verify your identity to access commands and output.")
                 } actions: {
-                    Button { unlock() } label: { Label("Face ID ile aç", systemImage: "faceid") }
+                    Button { unlock() } label: { Label("Unlock with Face ID", systemImage: "faceid") }
                         .buttonStyle(.borderedProminent).disabled(authenticating)
                     if authenticating { ProgressView() }
                 }
@@ -46,9 +46,9 @@ struct TerminalView: View {
         .onDisappear { runningTask?.cancel() }
         .sheet(isPresented: $showDirectory) {
             NavigationStack {
-                Form { TextField("Çalışma dizini", text: $cwd).textInputAutocapitalization(.never).autocorrectionDisabled() }
-                    .navigationTitle("Çalışma dizini").navigationBarTitleDisplayMode(.inline)
-                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Bitti") { showDirectory = false } } }
+                Form { TextField("Working Directory", text: $cwd).textInputAutocapitalization(.never).autocorrectionDisabled() }
+                    .navigationTitle("Working Directory").navigationBarTitleDisplayMode(.inline)
+                    .toolbar { ToolbarItem(placement: .confirmationAction) { Button("Done") { showDirectory = false } } }
             }.presentationDetents([.medium])
         }
     }
@@ -60,9 +60,9 @@ struct TerminalView: View {
                     if history.isEmpty {
                         VStack(alignment: .leading, spacing: 16) {
                             Image(systemName: "terminal").font(.largeTitle).accessibilityHidden(true)
-                            Text("Bir komutla başla.").font(.title2.weight(.semibold))
-                            Text("Çıktıyı anında gör. Gerektiğinde çalışan komutu durdur.").foregroundStyle(.secondary)
-                            Text("Komutlar kendi Mac hesabınla çalışır. En fazla 5 dakika; etkileşimli terminal oturumu değildir.")
+                            Text("Start with a command.").font(.title2.weight(.semibold))
+                            Text(session.usesCloudKit ? "Output appears when the command finishes. Stop requests may take time to reach your Mac." : "See output as it arrives and stop a command when needed.").foregroundStyle(.secondary)
+                            Text("Commands run under your Mac account with a five-minute limit. Interactive input is unavailable.")
                                 .font(.footnote).foregroundStyle(.secondary)
                         }.padding(.top, 24)
                     }
@@ -78,9 +78,9 @@ struct TerminalView: View {
                             if let summary = entry.summary { Text(summary).font(.caption).foregroundStyle(.secondary) }
                             if let error = entry.error {
                                 Text(error).font(.subheadline).foregroundStyle(.red)
-                                Text("Komut Mac’te çalışmış olabilir. Kontrol etmeden yeniden gönderme.").font(.footnote).foregroundStyle(.secondary)
+                                Text("The command may have run on your Mac. Check before sending it again.").font(.footnote).foregroundStyle(.secondary)
                             }
-                            if entry.id == activeID { HStack { ProgressView(); Text(session.usesCloudKit ? "Mac’ten sonuç bekleniyor…" : "Çalışıyor…").foregroundStyle(.secondary) } }
+                            if entry.id == activeID { HStack { ProgressView(); Text(session.usesCloudKit ? "Waiting for results from Mac…" : "Running…").foregroundStyle(.secondary) } }
                             Divider().padding(.top, 8)
                         }.id(entry.id)
                     }
@@ -92,7 +92,7 @@ struct TerminalView: View {
         .privacySensitive()
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                Button("Geçmişi temizle", systemImage: "eraser") { history.removeAll() }.disabled(history.isEmpty || running)
+                Button("Clear History", systemImage: "eraser") { history.removeAll() }.disabled(history.isEmpty || running)
             }
         }
     }
@@ -100,19 +100,19 @@ struct TerminalView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Button { showDirectory = true } label: {
-                    Label(cwd.isEmpty ? "Çalışma dizini" : cwd, systemImage: "folder")
+                    Label(cwd.isEmpty ? "Working Directory" : cwd, systemImage: "folder")
                         .font(.caption.monospaced()).lineLimit(1).truncationMode(.middle).frame(minHeight: 44)
                 }.disabled(running)
                 Spacer()
-                if running { Button(session.usesCloudKit ? "Durdurma isteği" : "Durdur", systemImage: "stop.fill", role: .destructive) { stop() }.frame(minHeight: 44) }
+                if running { Button(session.usesCloudKit ? "Request Stop" : "Stop", systemImage: "stop.fill", role: .destructive) { stop() }.frame(minHeight: 44) }
             }
             HStack(alignment: .bottom, spacing: 12) {
-                TextField("Komut yaz", text: $command, axis: .vertical)
+                TextField("Enter a command", text: $command, axis: .vertical)
                     .font(.body.monospaced()).lineLimit(1...5).focused($editing)
                     .textInputAutocapitalization(.never).autocorrectionDisabled()
                     .padding(12).background(Color(uiColor: .secondarySystemGroupedBackground), in: .rect(cornerRadius: 12)).disabled(running)
                 Button { run() } label: { Image(systemName: "arrow.up").font(.headline).frame(width: 44, height: 44) }
-                    .buttonStyle(.borderedProminent).clipShape(.circle).accessibilityLabel("Komutu çalıştır")
+                    .buttonStyle(.borderedProminent).clipShape(.circle).accessibilityLabel("Run Command")
                     .disabled(running || session.discovery == nil || session.isDemo || command.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }.padding(.horizontal, 20).padding(.bottom, 12).background(.bar)
@@ -141,14 +141,14 @@ struct TerminalView: View {
                         case "stdout": history[index].stdout += event.text ?? ""
                         case "stderr": history[index].stderr += event.text ?? ""
                         case "exit":
-                            history[index].summary = event.cancelled == true ? "Komut durduruldu." : event.timedOut == true ? "5 dakikalık süre sınırı aşıldı." : event.truncated == true ? "Çıktı sınırına ulaşıldı; komut durduruldu." : "Çıkış kodu: \(event.returncode ?? -1)"
+                            history[index].summary = event.cancelled == true ? "Command stopped." : event.timedOut == true ? "The five-minute time limit was reached." : event.truncated == true ? "The output limit was reached. The command was stopped." : "Exit code: \(event.returncode ?? -1)"
                         default: break
                         }
                     }
                 }
             } catch {
                 if let index = history.firstIndex(where: { $0.id == id }) {
-                    if stopRequested || Task.isCancelled { history[index].summary = "Sonuç bekleme durdu. Komutun durumunu Mac’te kontrol et." }
+                    if stopRequested || Task.isCancelled { history[index].summary = "Stopped waiting for results. Check the command’s status on your Mac." }
                     else { history[index].error = Session.describe(error) }
                 }
             }
@@ -162,7 +162,7 @@ struct TerminalView: View {
             do { try await session.stop(id) }
             catch MacError.http(let status, _) where status == 404 { }
             catch {
-                if let index = history.firstIndex(where: { $0.id == id }) { history[index].error = "Durdurma onayı alınamadı. " + Session.describe(error) }
+                if let index = history.firstIndex(where: { $0.id == id }) { history[index].error = "The stop request could not be confirmed. " + Session.describe(error) }
             }
         }
     }

@@ -95,14 +95,14 @@ async def forward(queue, request, response, client, send, config, credential, cl
                 if len(decoded) != 32 or decoded == base64.b64decode(config['key']):
                     raise ValueError('Invalid phone key')
                 if claim is None or config.get('phone_key') is not None or credential != config['key']:
-                    return await failure(409, 'Bu QR kullanıldı. Mac’te eşleştirmeyi yenile.')
+                    return await failure(409, 'This QR code has already been used. Reset pairing on your Mac.')
                 try:
                     claim(base64.b64encode(decoded).decode())
                 except OSError:
-                    return await failure(500, 'Mac eşleştirmeyi kaydedemedi.')
+                    return await failure(500, 'Your Mac could not save the pairing.')
                 return await reply(201, {'paired': True})
             if config.get('phone_key') != credential:
-                return await failure(401, 'Önce Mac ile eşleştir.')
+                return await failure(401, 'Pair with your Mac first.')
             if method == 'PUT':
                 # The terminating HTTP chunk follows the authenticated end frame. The
                 # local API cannot commit an upload whose sender disconnected early.
@@ -135,9 +135,9 @@ async def forward(queue, request, response, client, send, config, credential, cl
                     raise ValueError('Incomplete response')
                 await emit({'kind': 'end'})
     except (ValueError, binascii.Error):
-        await failure(400, 'MacCommand isteği geçersiz veya aktarım eksik.')
+        await failure(400, 'The MacCommand request is invalid or the transfer is incomplete.')
     except (httpx.HTTPError, TimeoutError):
-        await failure(502, 'Mac bağlantısı kesildi veya zaman aşımına uğradı.')
+        await failure(502, 'The connection to your Mac was lost or timed out.')
 
 
 async def bridge_connection(websocket, config, local_url, api_token, claim=None):

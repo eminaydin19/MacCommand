@@ -46,7 +46,7 @@ final class ScannerController: UIViewController, @preconcurrency AVCaptureMetada
     }
     private func showError() {
         let label = UILabel()
-        label.text = "Kamera açılamadı. Geri dönüp eşleştirme bilgisini yapıştırabilirsin."
+        label.text = "The camera could not be opened. Go back and paste the pairing code instead."
         label.textColor = .white
         label.numberOfLines = 0
         label.textAlignment = .center

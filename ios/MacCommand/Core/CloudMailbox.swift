@@ -48,12 +48,12 @@ struct CloudMailbox: Sendable {
             case "done":
                 return try await database.record(for: recordID)
             case "failed":
-                throw MacError.http(502, "Mac isteği tamamlayamadı.")
+                throw MacError.http(502, "Your Mac could not complete the request.")
             default:
                 try await Task.sleep(for: .seconds(3))
             }
         }
-        throw MacError.http(503, "Mac zamanında yanıt vermedi. Yeniden göndermeden önce Mac’te işlemin durumunu kontrol et.")
+        throw MacError.http(503, "Your Mac did not respond in time. Check the operation on your Mac before sending it again.")
     }
 
     func queued() async throws -> [CKRecord.ID] {
@@ -105,15 +105,15 @@ struct CloudMailbox: Sendable {
         guard let error = error as? CKError else { return error }
         switch error.code {
         case .notAuthenticated:
-            return MacError.http(503, "Mac ve iPhone’da aynı iCloud hesabıyla giriş yap.")
+            return MacError.http(503, "Sign in to the same iCloud account on your Mac and iPhone.")
         case .zoneNotFound, .unknownItem:
-            return MacError.http(503, "Mac’in iCloud eşleştirmesi bulunamadı. MacCommand’i Mac’te aç.")
+            return MacError.http(503, "Could not find your Mac’s iCloud pairing. Open MacCommand on your Mac.")
         case .badContainer, .missingEntitlement, .permissionFailure:
-            return MacError.http(503, "Bu sürümün iCloud erişimi hazır değil.")
+            return MacError.http(503, "iCloud access is not configured for this build.")
         case .quotaExceeded:
-            return MacError.http(507, "iCloud’da bu aktarım için yer kalmadı.")
+            return MacError.http(507, "There is not enough iCloud storage for this transfer.")
         default:
-            return MacError.http(503, "iCloud bağlantısı geçici olarak kullanılamıyor. İşlemin durumunu kontrol et.")
+            return MacError.http(503, "iCloud is temporarily unavailable. Check the status of the operation.")
         }
     }
 }

@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension Int64 {
-    var byteLabel: String { ByteCountFormatter.string(fromByteCount: self, countStyle: .binary) }
+    var byteLabel: String { formatted(.byteCount(style: .binary).locale(Locale(identifier: "en_US"))) }
 }
 
 struct ConnectionStatus: View {
@@ -26,7 +26,7 @@ struct ErrorNotice: View {
         VStack(alignment: .leading, spacing: 10) {
             Label(message, systemImage: "exclamationmark.circle")
                 .font(.subheadline).foregroundStyle(.primary)
-            if let retry { Button("Yeniden dene", action: retry).frame(minHeight: 44) }
+            if let retry { Button("Try Again", action: retry).frame(minHeight: 44) }
         }
         .accessibilityElement(children: .contain)
     }

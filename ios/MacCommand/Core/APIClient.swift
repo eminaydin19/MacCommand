@@ -121,7 +121,7 @@ public struct APIClient: Sendable {
                     let event = try CommandEvent.parse(line)
                     try await onEvent(event)
                     if event.type == "exit" { exited = true }
-                    if event.type == "error" { throw MacError.http(400, event.text ?? "Komut çalıştırılamadı.") }
+                    if event.type == "error" { throw MacError.http(400, event.text ?? "Could not run the command.") }
                 }
                 guard pending.count <= 65536 else { throw MacError.invalidResponse }
             }
@@ -132,7 +132,7 @@ public struct APIClient: Sendable {
     public func upload(_ file: URL, directory: String, discovery: Discovery) async throws {
         let values = try file.resourceValues(forKeys: [.isRegularFileKey, .fileSizeKey])
         guard values.isRegularFile == true, let length = values.fileSize, (0...Self.transferLimit).contains(length) else {
-            throw MacError.http(413, "Yalnızca 50 MB veya daha küçük normal dosyalar aktarılabilir.")
+            throw MacError.http(413, "Only regular files up to 50 MiB can be transferred.")
         }
         try await exchange("PUT", "files/upload", discovery,
             query: [.init(name: "directory", value: directory), .init(name: "name", value: file.lastPathComponent)],

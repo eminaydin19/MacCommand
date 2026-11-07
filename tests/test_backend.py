@@ -44,11 +44,15 @@ def test_protected_paths_never_trashed(client, path):
 
 
 def test_missing_and_oversize_files(client, tmp_path):
-    assert client.get('/files/read', params={'path':str(tmp_path/'missing')}).status_code == 404
+    missing = client.get('/files/read', params={'path':str(tmp_path/'missing')})
+    assert missing.status_code == 404
+    assert missing.json()['detail'] == 'File not found.'
     file = tmp_path/'big'
     with file.open('wb') as f:
         f.truncate(5*1024*1024+1)
-    assert client.get('/files/read',params={'path':str(file)}).status_code == 413
+    oversized = client.get('/files/read',params={'path':str(file)})
+    assert oversized.status_code == 413
+    assert oversized.json()['detail'] == 'The preview limit is 5 MiB. Choose a smaller file.'
 
 
 def test_command_timeout_kills_descendants(tmp_path):

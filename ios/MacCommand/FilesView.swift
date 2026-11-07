@@ -29,15 +29,15 @@ struct FilesView: View {
             .listRowBackground(Color.clear)
             if let error { Section { ErrorNotice(message: error, retry: { Task { await load() } }) } }
             if loading && listing == nil {
-                HStack { ProgressView(); Text("Klasör okunuyor…").foregroundStyle(.secondary) }
+                HStack { ProgressView(); Text("Loading folder…").foregroundStyle(.secondary) }
             }
             if isHome && !session.favoriteFolders.isEmpty {
-                Section("Favoriler") {
+                Section("Favorites") {
                     ForEach(session.favoriteFolders) { folder in
                         NavigationLink { FilesView(path: folder.path) } label: {
                             Label(folder.name, systemImage: "star").foregroundStyle(.primary)
                         }
-                        .contextMenu { Button("Favorilerden kaldır", systemImage: "star.slash") { toggleFavorite(folder.path, name: folder.name) } }
+                        .contextMenu { Button("Remove from Favorites", systemImage: "star.slash") { toggleFavorite(folder.path, name: folder.name) } }
                     }
                 }
             }
@@ -51,44 +51,44 @@ struct FilesView: View {
                         }
                     }
                     .swipeActions(allowsFullSwipe: false) {
-                        Button("Çöp Sepeti", systemImage: "trash", role: .destructive) { trashTarget = file }
+                        Button("Trash", systemImage: "trash", role: .destructive) { trashTarget = file }
                             .disabled(trashing || session.isDemo)
                     }
                     .contextMenu {
                         if file.isDir {
-                            Button(session.favoriteFolders.contains(where: { $0.path == file.path }) ? "Favorilerden kaldır" : "Favorilere ekle", systemImage: "star") { toggleFavorite(file.path, name: file.name) }
+                            Button(session.favoriteFolders.contains(where: { $0.path == file.path }) ? "Remove from Favorites" : "Add to Favorites", systemImage: "star") { toggleFavorite(file.path, name: file.name) }
                         } else {
-                            Button("iPhone’a indir", systemImage: "arrow.down.to.line") { startDownload(file.path) }
+                            Button("Download to iPhone", systemImage: "arrow.down.to.line") { startDownload(file.path) }
                                 .disabled(session.isDemo || transferStatus != nil)
                         }
-                        ShareLink(item: file.path) { Label("Yolu paylaş", systemImage: "square.and.arrow.up") }
-                        Button("Çöp Sepeti’ne taşı", systemImage: "trash", role: .destructive) { trashTarget = file }
+                        ShareLink(item: file.path) { Label("Share Path", systemImage: "square.and.arrow.up") }
+                        Button("Move to Trash", systemImage: "trash", role: .destructive) { trashTarget = file }
                             .disabled(trashing || session.isDemo)
                     }
                 }
                 if listing != nil && visible.isEmpty {
-                    ContentUnavailableView(query.isEmpty ? "Bu klasör boş" : "Sonuç bulunamadı",
+                    ContentUnavailableView(query.isEmpty ? "This folder is empty" : "No results",
                         systemImage: query.isEmpty ? "folder" : "magnifyingglass",
-                        description: Text(query.isEmpty ? "Gösterecek dosya veya klasör yok." : "Başka bir dosya adıyla ara."))
+                        description: Text(query.isEmpty ? "There are no files or folders to show." : "Try another file name."))
                 }
-            } header: { if let listing { Text("\(listing.entries.count) öğe") } }
+            } header: { if let listing { Text("\(listing.entries.count) items") } }
         }
-        .searchable(text: $query, prompt: "Bu klasörde ara")
-        .navigationTitle(isHome ? "Dosyalar" : (path as NSString).lastPathComponent)
+        .searchable(text: $query, prompt: "Search this folder")
+        .navigationTitle(isHome ? "Files" : (path as NSString).lastPathComponent)
         .navigationBarTitleDisplayMode(isHome ? .large : .inline)
         .toolbar {
             ToolbarItemGroup(placement: .topBarTrailing) {
-                Button("Favoriye ekle veya kaldır", systemImage: session.favoriteFolders.contains(where: { $0.path == listing?.path }) ? "star.fill" : "star") {
+                Button("Toggle Favorite", systemImage: session.favoriteFolders.contains(where: { $0.path == listing?.path }) ? "star.fill" : "star") {
                     if let listing { toggleFavorite(listing.path, name: (listing.path as NSString).lastPathComponent) }
                 }.disabled(listing == nil)
-                Button("Mac’e dosya gönder", systemImage: "square.and.arrow.up") { importing = true }
+                Button("Send File to Mac", systemImage: "square.and.arrow.up") { importing = true }
                     .disabled(session.isDemo || listing == nil || transferStatus != nil)
             }
         }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.item]) { result in
             switch result {
             case .success(let file): startUpload(file)
-            case .failure(let error): self.error = error.localizedDescription
+            case .failure(let error): self.error = Session.describe(error)
             }
         }
         .sheet(isPresented: $showingShare, onDismiss: {
@@ -100,38 +100,38 @@ struct FilesView: View {
         .onChange(of: scenePhase) { _, phase in if phase == .background { transferTask?.cancel() } }
         .refreshable { await load() }
         .task(id: "\(session.discovery?.pairing?.deviceID ?? "")-\(path)") { await load() }
-        .confirmationDialog("Çöp Sepeti’ne taşınsın mı?", isPresented: Binding(get: { trashTarget != nil }, set: { if !$0 { trashTarget = nil } }), titleVisibility: .visible) {
+        .confirmationDialog("Move to Trash?", isPresented: Binding(get: { trashTarget != nil }, set: { if !$0 { trashTarget = nil } }), titleVisibility: .visible) {
             if let target = trashTarget {
-                Button("“\(target.name)” öğesini taşı", role: .destructive) { Task { await trash(target) } }
+                Button("Move “\(target.name)”", role: .destructive) { Task { await trash(target) } }
             }
-            Button("Vazgeç", role: .cancel) { trashTarget = nil }
-        } message: { Text("Mac’teki Çöp Sepeti’nden geri alabilirsin.") }
+            Button("Cancel", role: .cancel) { trashTarget = nil }
+        } message: { Text("You can restore it from the Trash on your Mac.") }
         .overlay {
             if trashing || transferStatus != nil {
                 VStack(spacing: 12) {
-                    ProgressView(transferStatus ?? "Çöp Sepeti’ne taşınıyor…")
-                    if transferStatus != nil { Button("Vazgeç") { transferTask?.cancel() }.frame(minHeight: 44) }
+                    ProgressView(transferStatus ?? "Moving to Trash…")
+                    if transferStatus != nil { Button("Cancel") { transferTask?.cancel() }.frame(minHeight: 44) }
                 }.padding(24).background(.regularMaterial, in: .rect(cornerRadius: 16))
             }
         }
     }
     private func toggleFavorite(_ path: String, name: String) {
         do { try session.toggleFavorite(path, name: name) }
-        catch { self.error = error.localizedDescription }
+        catch { self.error = Session.describe(error) }
     }
     private func startUpload(_ file: URL) {
         guard let directory = listing?.path, transferStatus == nil else { return }
-        transferStatus = "Mac’e gönderiliyor…"
+        transferStatus = "Sending to Mac…"
         transferTask = Task {
             let scoped = file.startAccessingSecurityScopedResource()
             defer { if scoped { file.stopAccessingSecurityScopedResource() }; transferStatus = nil; transferTask = nil }
             do { try await session.upload(file, directory: directory); await load() }
-            catch { if !Task.isCancelled { self.error = "Aktarım tamamlanmadı. Hedef klasörü kontrol et. " + Session.describe(error) } }
+            catch { if !Task.isCancelled { self.error = "The transfer did not finish. Check the destination folder. " + Session.describe(error) } }
         }
     }
     private func startDownload(_ path: String) {
         guard transferStatus == nil else { return }
-        transferStatus = "iPhone’a indiriliyor…"
+        transferStatus = "Downloading to iPhone…"
         transferTask = Task {
             defer { transferStatus = nil; transferTask = nil }
             do {
@@ -170,7 +170,7 @@ private struct FileRow: View {
                 .accessibilityHidden(true)
             VStack(alignment: .leading, spacing: 4) {
                 Text(file.name).foregroundStyle(.primary).lineLimit(2)
-                Text(file.isDir ? "Klasör" : file.size.byteLabel).font(.caption).foregroundStyle(.secondary)
+                Text(file.isDir ? "Folder" : file.size.byteLabel).font(.caption).foregroundStyle(.secondary)
             }
             Spacer(minLength: 0)
         }
@@ -187,13 +187,13 @@ private struct FilePreview: View {
     var body: some View {
         ScrollView([.vertical, .horizontal]) {
             if let content {
-                Text(content.isEmpty ? "Dosya boş." : content).font(.callout.monospaced())
+                Text(content.isEmpty ? "The file is empty." : content).font(.callout.monospaced())
                     .textSelection(.enabled).padding(20).frame(maxWidth: .infinity, alignment: .leading)
             } else if let error { ErrorNotice(message: error, retry: nil).padding(20) }
-            else { ProgressView("Önizleme açılıyor…").padding(20) }
+            else { ProgressView("Opening preview…").padding(20) }
         }
         .navigationTitle((path as NSString).lastPathComponent).navigationBarTitleDisplayMode(.inline)
-        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("iPhone’a indir", systemImage: "arrow.down.to.line", action: download).disabled(session.isDemo) } }
+        .toolbar { ToolbarItem(placement: .topBarTrailing) { Button("Download to iPhone", systemImage: "arrow.down.to.line", action: download).disabled(session.isDemo) } }
         .task {
             do { content = try await session.read(path).content }
             catch { if !Task.isCancelled { self.error = Session.describe(error) } }
